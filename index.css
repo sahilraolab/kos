@@ -1,0 +1,259 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "DM Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+
+::-webkit-scrollbar {
+    width: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #F05756;
+}
+
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+header,
+footer {
+    position: fixed;
+    width: 100%;
+}
+
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #FFFFFF;
+    padding: .5rem 2rem;
+    border-bottom: 1px solid #CCCCCC;
+    top: 0;
+}
+
+header>ul {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+header>ul>li {
+    font-size: 1rem;
+    color: #929292;
+    cursor: pointer;
+    border: .1rem solid #FFFFFF;
+    padding: .6rem 2rem;
+    border-radius: 25px;
+}
+
+.active_link {
+    font-size: 1.1rem;
+    background-color: #FFEEEF;
+    color: #F05756;
+    font-weight: bold;
+    border: .1rem solid #F05756;
+}
+
+.user_info {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.user_img {
+    height: 3.5rem;
+    width: 3.5rem;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.user_img>img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user_typo {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+
+.user_name {
+    color: #2B2B2B;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.user_role {
+    color: #929292;
+    font-size: .9rem;
+    letter-spacing: .1rem;
+    font-weight: lighter;
+}
+
+main {
+    padding: 7rem 2rem;
+    background-color: #F7F7F7;
+    flex: 1;
+    overflow: scroll;
+}
+
+.orders {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.order {
+    width: 20rem;
+    height: 30rem;
+    display: flex;
+    flex-direction: column;
+    border-radius: 1rem;
+    background-color: #FFFFFF;
+    box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+}
+
+.order_info {
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    padding: 1rem;
+    /* background-color: #37EF80; */
+    background-color: #EFA237;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order_owner {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    color: white;
+}
+
+.order_type {
+    background-color: #F5F5F5;
+    padding: .5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.order_type>div {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.clock {
+    width: 2rem;
+    height: 2rem;
+    background-color: #FFFFFF;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: .3rem;
+    border-radius: 50%;
+    object-fit: contain;
+}
+
+.order_item_list{
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+.order_item {
+    margin: 1rem 1rem 0 1rem;
+    padding-bottom: .5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #FFFFFF;
+    border-bottom: 2px dashed #929292;
+}
+
+.empty_circle, .circle_with_tick{
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: 2px solid #292D32;
+    color: #292D32;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    object-fit: cover;
+}
+
+.circle_with_tick > svg{
+    height: 2rem;
+    width: .8rem;
+}
+
+.order_action {
+    padding: 1rem;
+    border-bottom-right-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+    display: flex;
+    background-color: #FFFFFF;
+    justify-content: space-between;
+    gap: .5rem;
+    align-items: stretch;
+}
+
+.order_action button {
+    flex: 1;
+    border-radius: 1.5rem;
+    border: none;
+    outline: none;
+    background-color: #EFA237;
+    color: #FFFFFF;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: .8rem;
+    cursor: pointer;
+}
+
+.order_action>div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #000000;
+    padding: .5rem 2rem;
+    border-radius: 1.5rem;
+    cursor: pointer;
+}
+
+.order_action>div>svg {
+    width: 2rem;
+}
+
+footer {
+    bottom: 0;
+}
