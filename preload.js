@@ -1,10 +1,12 @@
 const { ipcRenderer, contextBridge } = require('electron');
 
-// Expose ipcRenderer directly
-contextBridge.exposeInMainWorld("ipcRenderer", ipcRenderer);
-
-// Expose specific methods of ipcRenderer
-contextBridge.exposeInMainWorld("api", {
-    send: (channel, data) => ipcRenderer.send(channel, data),
-    receive: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(args))
+contextBridge.exposeInMainWorld('api', {
+    send: (channel, data) => {
+        console.log(`Sending data to channel ${channel}:`, data);
+        ipcRenderer.send(channel, data);
+    },
+    receive: (channel, func) => {
+        console.log(`Listening for channel ${channel}`);
+        ipcRenderer.on(channel, (event, ...args) => func(...args));
+    }
 });

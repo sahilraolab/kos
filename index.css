@@ -130,7 +130,7 @@ main {
 
 .order {
     width: 20rem;
-    height: 30rem;
+    height: 25rem;
     display: flex;
     flex-direction: column;
     border-radius: 1rem;
