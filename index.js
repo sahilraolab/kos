@@ -40,38 +40,67 @@ app.on('activate', function () {
     }
 });
 
-// Create a server to listen for connections from order creation software
-const server = net.createServer((socket) => {
-    console.log('Order creation software connected');
+const KDS_PORT = 9001;
+const UDP_PORT = 9999;
 
-    // Handle incoming orders from order creation software
-    socket.on('data', (data) => {
-        // console.log('Received order from order creation software:', data.toString());
-        console.log(":)++++++++++++++++++++++++++++++:)")
-
-        // Parse the received data as JSON
-        const orderData = JSON.parse(data.toString());
-
-        // Send the order data to the renderer process
-        if (mainWindow) {
-            console.log('Sending order data to renderer process');
-            mainWindow.webContents.send('order-data', orderData);
+// ✅ Get Local IP Address
+function getLocalIPAddress() {
+    const interfaces = os.networkInterfaces();
+    for (let iface of Object.values(interfaces)) {
+        for (let details of iface) {
+            if (details.family === 'IPv4' && !details.internal) {
+                return details.address;
+            }
         }
+    }
+    return '127.0.0.1';
+}
 
+const kdsServer = net.createServer((socket) => {
+    console.log('POS Trying to Connect...');
 
-        // Simulate updating order status and send it back to order creation software
-        setTimeout(() => {
-            const updatedOrderStatus = 'Order in progress';
-            socket.write(updatedOrderStatus);
-        }, 2000);
+    socket.once('data', (data) => {
+        const receivedPassword = data.toString().trim();
+        if (receivedPassword === KDS_INFO.password) {
+            socket.write("AUTH_SUCCESS");
+            console.log("✅ POS Connected Successfully");
+        } else {
+            socket.write("AUTH_FAILED");
+            socket.destroy();
+            console.log("❌ POS Connection Rejected - Incorrect Password");
+        }
     });
 
-    socket.on('error', (error) => {
-        console.error('Socket error:', error);
-    });
+    socket.on('error', (err) => console.error('KDS Error:', err));
+    socket.on('close', () => console.log('POS Disconnected'));
 });
 
-const port = 9001;
-server.listen(port, () => {
-    console.log(`KDS listening for connections on port ${port}`);
+kdsServer.listen(KDS_PORT, () => {
+    console.log(`✅ KDS running on ${KDS_INFO.ip}:${KDS_PORT}`);
 });
+
+// ✅ Handle UDP Discovery Requests
+const udpServer = dgram.createSocket('udp4');
+
+const KDS_INFO = {
+    kds_name: "Main Kitchen Display",
+    department: "Kitchen",
+    ip: getLocalIPAddress(),
+    port: KDS_PORT,
+    password: "1234" // In production, use a secure hash instead
+};
+
+udpServer.on('message', (msg, rinfo) => {
+    console.log(`🔍 Received Discovery Request from ${rinfo.address}`);
+
+    const response = JSON.stringify({
+        kds_name: KDS_INFO.kds_name,
+        department: KDS_INFO.department,
+        ip: KDS_INFO.ip,
+        port: KDS_INFO.port
+    });
+
+    udpServer.send(response, rinfo.port, rinfo.address);
+});
+
+udpServer.bind(UDP_PORT, () => console.log(`🔎 KDS Discovery Listening on UDP ${UDP_PORT}`));
