@@ -1,12 +1,10 @@
-const { ipcRenderer, contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-    send: (channel, data) => {
-        console.log(`Sending data to channel ${channel}:`, data);
-        ipcRenderer.send(channel, data);
+    receive: (channel, callback) => {
+        ipcRenderer.on(channel, (_, data) => callback(data));
     },
-    receive: (channel, func) => {
-        console.log(`Listening for channel ${channel}`);
-        ipcRenderer.on(channel, (event, ...args) => func(...args));
+    send: (channel, data) => {
+        ipcRenderer.send(channel, data);
     }
 });
