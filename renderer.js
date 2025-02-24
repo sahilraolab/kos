@@ -5,14 +5,36 @@ window.api.receive('order-data', (orderData) => {
   // Create a new order element
   const orderElement = document.createElement('div');
   orderElement.classList.add('order');
+  orderElement.dataset.orderId = orderData.orderId;
+
+  const timerId = `timer-${orderData.orderId}`;
+
+
+  // Generate order items dynamically
+  const orderItems = orderData.orderDetails.selectedMenuList.map(item => {
+    return `
+      <div class="order_item" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleItem(this)">
+        <div style="display: flex; flex-direction: column; gap: .2rem;">
+          <span style="font-size: 1rem; font-weight: bold; color: #342C2C;">${item.quantity} x ${item.name}</span>
+          <span style="font-size: .8rem; font-weight: bold; color: #8F8888;">
+            ${item.selectedAddons ? item.selectedAddons.map(addon => addon.name).join(", ") : ""}
+          </span>
+        </div>
+        <div class="circle_icon">
+          <div class="empty_circle" style="width: 20px; height: 20px; border: 2px solid #292D32; border-radius: 50%;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
 
   // Create order details
   const orderDetails = `
       <div class="order">
           <div class="order_info">
             <div class="order_owner">
-              <span style="font-size: 1.3rem; font-weight: bold;">Karan Rao</span>
-              <span style="font-size: 1rem; font-weight: bold;">00:00:12</span>
+              <span style="font-size: 1.3rem; font-weight: bold;">${orderData.orderDetails.userInfo.fullName}</span>
+              <span id="${timerId}" style="font-size: 1rem; font-weight: bold;">00:00:00</span>
             </div>
             <svg width="2rem" height="2rem" style="cursor: pointer;" viewBox="0 0 24 24" fill="none"
               xmlns="http://www.w3.org/2000/svg">
@@ -38,27 +60,15 @@ window.api.receive('order-data', (orderData) => {
                     stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </div>
-              <span style="color: #312D2D; font-weight: bold; font-size: 1rem;">Quick Bill</span>
+              <span style="color: #312D2D; font-weight: bold; font-size: 1rem;">${orderData.orderDetails.orderType === "pickUp" ? "Pick Up" : "Dine In"}</span>
             </div>
-            <span style="color: #312D2D; font-weight: bold; font-size: 1rem;">#0001</span>
+            <span style="color: #312D2D; font-weight: bold; font-size: 1rem;">${formatOrderId(orderData.orderId)}</span>
           </div>
           <div class="order_item_list">
-            <div class="order_item">
-              <div style="display: flex; flex-direction: column; gap: .2rem;">
-                <span style="font-size: 1rem; font-weight: bold; color: #342C2C;">1 x Sandwich</span>
-                <span style="font-size: .8rem; font-weight: bold; color: #8F8888;">Chicken</span>
-              </div>
-              <!-- <div class="empty_circle"></div> -->
-              <div class="circle_with_tick">
-                <svg width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M0.810547 4.09381L3.66266 6.94592L9.37695 1.2417" stroke="#292D32" stroke-width="1.51172"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </div>
-            </div>
+          ${orderItems}
           </div>
           <div class="order_action">
-            <button>Mark as Done</button>
+            <button class="markDoneBtn" data-order-id="${orderData.orderId}">Mark as Done</button>
             <div>
               <svg viewBox="0 0 31 31" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
@@ -88,4 +98,79 @@ window.api.receive('order-data', (orderData) => {
 
   // Append the new order element to the orders container
   ordersContainer.appendChild(orderElement);
+
+  // ✅ Add event listener for "Mark as Done" button
+  orderElement.querySelector('.markDoneBtn').addEventListener('click', function () {
+    const orderId = this.dataset.orderId;
+
+    // Remove the order from the DOM
+    const orderElement = document.querySelector(`div[data-order-id="${orderId}"]`);
+    if (orderElement) {
+      orderElement.remove();
+    }
+
+    // ✅ Send order completion message to main process
+    window.api.send('order-done', { orderId });
+  });
+
+  setTimeout(() => startTimer(timerId), 0);
+
 });
+
+
+function formatOrderId(orderId) {
+  return orderId >= 100 ? `#${orderId}` : `#${orderId.toString().padStart(3, '0')}`;
+}
+
+// Timer function
+function startTimer(timerId) {
+  let seconds = 0; // Ensure seconds is initialized properly
+  const timerElement = document.getElementById(timerId);
+
+  if (!timerElement) {
+    console.error(`Timer element with ID '${timerId}' not found.`);
+    return;
+  }
+
+  function updateTimerDisplay() {
+    if (typeof seconds !== 'number' || isNaN(seconds)) {
+      console.error(`Invalid seconds value: ${seconds}`);
+      return;
+    }
+
+    let hrs = Math.floor(seconds / 3600);
+    let mins = Math.floor((seconds % 3600) / 60);
+    let secs = seconds % 60;
+
+    timerElement.textContent =
+      `${hrs.toString().padStart(2, '0')}:` +
+      `${mins.toString().padStart(2, '0')}:` +
+      `${secs.toString().padStart(2, '0')}`;
+  }
+
+  updateTimerDisplay(); // Initial display
+  setInterval(() => {
+    seconds++;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+
+// Function to toggle between empty circle and ticked circle
+function toggleItem(element) {
+  const circleIcon = element.querySelector('.circle_icon');
+  if (circleIcon.innerHTML.includes('empty_circle')) {
+    circleIcon.innerHTML = `
+      <div class="circle_with_tick">
+        <svg width="11" height="8" viewBox="0 0 11 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0.810547 4.09381L3.66266 6.94592L9.37695 1.2417" stroke="#292D32" stroke-width="1.51172"
+            stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+    `;
+  } else {
+    circleIcon.innerHTML = `
+      <div class="empty_circle" style="width: 20px; height: 20px; border: 2px solid #292D32; border-radius: 50%;"></div>
+    `;
+  }
+}

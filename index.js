@@ -5,7 +5,31 @@ const dgram = require('dgram');
 const os = require('os');
 
 let mainWindow;
+const UDP_PORT = 9999;
+let KDS_PORT = 9001; // Default KDS port
 
+// ✅ Get Local IP Address
+function getLocalIPAddress() {
+    const interfaces = os.networkInterfaces();
+    for (let ifaceName in interfaces) {
+        for (let details of interfaces[ifaceName]) {
+            if (details.family === 'IPv4' && !details.internal) {
+                return details.address;
+            }
+        }
+    }
+    return '127.0.0.1'; // Default if no external IP is found
+}
+
+// ✅ KDS Information
+const KDS_INFO = {
+    kds_name: "Main Kitchen Display",
+    department: "Kitchen",
+    ip: getLocalIPAddress(),
+    port: KDS_PORT
+};
+
+// ✅ Create KDS Window
 function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
@@ -14,60 +38,43 @@ function createWindow() {
         height: height,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true, // Ensure context isolation is enabled
-            nodeIntegration: false  // Ensure node integration is disabled for security
+            contextIsolation: true, // Secure IPC communication
+            nodeIntegration: false  // Prevent security risks
         }
     });
 
     mainWindow.loadFile('index.html');
 
-    mainWindow.on('closed', function () {
+    mainWindow.on('closed', () => {
         mainWindow = null;
     });
 }
 
 app.on('ready', createWindow);
 
-app.on('window-all-closed', function () {
+app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
     }
 });
 
-app.on('activate', function () {
+app.on('activate', () => {
     if (mainWindow === null) {
         createWindow();
     }
 });
 
-const KDS_PORT = 9001;
-const UDP_PORT = 9999;
-
-// ✅ Get Local IP Address
-function getLocalIPAddress() {
-    const interfaces = os.networkInterfaces();
-    for (let iface of Object.values(interfaces)) {
-        for (let details of iface) {
-            if (details.family === 'IPv4' && !details.internal) {
-                return details.address;
-            }
-        }
-    }
-    return '127.0.0.1';
-}
-
+// ✅ Create TCP KDS Server
 const kdsServer = net.createServer((socket) => {
-    console.log('POS Trying to Connect...');
+    console.log("✅ POS Connected Successfully");
 
-    socket.once('data', (data) => {
-        const receivedPassword = data.toString().trim();
-        if (receivedPassword === KDS_INFO.password) {
-            socket.write("AUTH_SUCCESS");
-            console.log("✅ POS Connected Successfully");
-        } else {
-            socket.write("AUTH_FAILED");
-            socket.destroy();
-            console.log("❌ POS Connection Rejected - Incorrect Password");
+    socket.on('data', (data) => {
+        try {
+            const orderDetails = JSON.parse(data.toString());
+            console.log('🛎️ New Order Received:', orderDetails);
+            sendOrderToRenderer(orderDetails);
+        } catch (err) {
+            console.error('❌ Error Processing Order:', err);
         }
     });
 
@@ -75,20 +82,34 @@ const kdsServer = net.createServer((socket) => {
     socket.on('close', () => console.log('POS Disconnected'));
 });
 
-kdsServer.listen(KDS_PORT, () => {
-    console.log(`✅ KDS running on ${KDS_INFO.ip}:${KDS_PORT}`);
-});
+// ✅ Start KDS Server with Port Retry
+function startKdsServer(port) {
+    kdsServer.listen(port, () => {
+        console.log(`✅ KDS running on ${KDS_INFO.ip}:${port}`);
+    }).once('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`⚠️ Port ${port} is in use. Trying ${port + 1}...`);
+            startKdsServer(port + 1); // Retry with next port
+        } else {
+            console.error('❌ KDS Server Error:', err);
+        }
+    });
+}
 
-// ✅ Handle UDP Discovery Requests
+startKdsServer(KDS_PORT);
+
+// ✅ Function to Send Orders to UI
+function sendOrderToRenderer(orderDetails) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+        console.log('📢 Sending order data to UI:', orderDetails);
+        mainWindow.webContents.send('order-data', orderDetails);
+    } else {
+        console.warn('⚠️ Renderer not available. Order not sent.');
+    }
+}
+
+// ✅ UDP Discovery Server
 const udpServer = dgram.createSocket('udp4');
-
-const KDS_INFO = {
-    kds_name: "Main Kitchen Display",
-    department: "Kitchen",
-    ip: getLocalIPAddress(),
-    port: KDS_PORT,
-    password: "1234" // In production, use a secure hash instead
-};
 
 udpServer.on('message', (msg, rinfo) => {
     console.log(`🔍 Received Discovery Request from ${rinfo.address}`);
